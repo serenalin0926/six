@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>尋找你的隊輔</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Noto Sans TC",sans-serif;background:#f4f1ea;color:#292622}
+button,input{font:inherit}
+.app{max-width:720px;margin:auto;min-height:100vh;padding:24px 18px 48px}
+.screen{display:none}.screen.active{display:block}
+.logo{text-align:center;padding:40px 0 24px}
+.logo h1{margin:0;font-size:34px;letter-spacing:4px}.logo p{color:#777}
+.panel{background:#fff;border-radius:22px;padding:24px;box-shadow:0 8px 30px #00000012;margin-bottom:18px}
+label{display:block;margin-bottom:8px;font-weight:700}
+input{width:100%;padding:14px 16px;border:1px solid #ddd;border-radius:12px;background:#fafafa;outline:none}
+input:focus{border-color:#777}
+.btn{border:0;border-radius:12px;padding:14px 18px;cursor:pointer;font-weight:700;background:#292622;color:#fff;width:100%;margin-top:12px}
+.btn.secondary{background:#e8e3d9;color:#292622}
+.error{color:#b3261e;margin-top:10px;font-size:14px}
+.success{color:#2e7d32;margin-top:10px;font-size:14px}
+.topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
+.points{font-weight:800;font-size:18px}.points span{font-size:24px}
+.cards{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.mystery-card{border-radius:18px;overflow:hidden;background:#24211e;aspect-ratio:1/1;cursor:pointer;position:relative}
+.card-cover{width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:46px}
+.card-title{text-align:center;margin-top:8px;font-weight:700}
+.grid-title{margin:0 0 14px}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:5px}
+.tile{aspect-ratio:1;border:0;padding:0;border-radius:8px;overflow:hidden;cursor:pointer;background:#282522;color:#fff;font-size:22px}
+.tile.locked{background:#282522}.tile.opened{cursor:default}
+.tile img{width:100%;height:100%;object-fit:cover;display:block}
+.code-row{display:flex;gap:8px}.code-row input{flex:1}.code-row .btn{width:auto;margin:0;white-space:nowrap}
+.history{font-size:14px;color:#666;margin-top:12px}
+.small{font-size:13px;color:#777}
+.badge{display:inline-block;padding:5px 9px;border-radius:99px;background:#eee8dd;margin:3px;font-size:12px}
+.challenge-box{border:1px solid #e5dfd4;border-radius:16px;padding:16px;margin-top:14px}
+.money-input{display:flex;gap:8px;align-items:center}
+.money-input input{margin:0}
+.money-input span{font-weight:700;white-space:nowrap}
+.status{margin-top:10px;font-size:14px;color:#666}
+.money{font-weight:800;font-size:18px;cursor:pointer;text-align:right}.money span{font-size:24px}.money small{display:block;font-size:11px;font-weight:600;color:#777;margin-top:2px}
+
+/* 💌 初始活動幣紅包彈窗 */
+.cashflow-popup{position:fixed;inset:0;background:rgba(0,0,0,.58);display:none;align-items:center;justify-content:center;z-index:10000;padding:20px}.cashflow-popup.show{display:flex}.cashflow-panel{width:min(430px,94vw);max-height:82vh;overflow:auto;background:#fff;border-radius:22px;padding:22px;box-shadow:0 22px 70px rgba(0,0,0,.3)}.cashflow-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}.cashflow-head h2{margin:0}.cashflow-close{border:0;background:#eee8dd;border-radius:999px;width:36px;height:36px;cursor:pointer;font-size:20px}.cashflow-total{background:#f4f1ea;border-radius:14px;padding:14px;margin-bottom:14px;font-weight:800}.cashflow-list{display:flex;flex-direction:column;gap:9px}.cashflow-item{display:flex;justify-content:space-between;align-items:center;padding:12px 13px;border:1px solid #eee8dd;border-radius:13px}.cashflow-item .desc{font-weight:700}.cashflow-item .time{font-size:11px;color:#888;margin-top:3px}.cashflow-plus{color:#2e7d32;font-weight:800}.cashflow-minus{color:#b3261e;font-weight:800}.cashflow-empty{text-align:center;color:#777;padding:20px 0}.money-popup{position:fixed;inset:0;background:rgba(0,0,0,.58);display:none;align-items:center;justify-content:center;z-index:9999;padding:20px}
+.money-popup.show{display:flex}
+.money-envelope{width:min(340px,92vw);background:linear-gradient(145deg,#d92d25,#b71916);border-radius:24px;padding:30px 22px 24px;text-align:center;color:#fff;box-shadow:0 22px 70px rgba(0,0,0,.35);position:relative;overflow:hidden;animation:envelopeIn .35s ease-out}
+.money-envelope:before{content:"";position:absolute;inset:-60px -40px auto;height:180px;background:rgba(255,255,255,.08);transform:rotate(-12deg)}
+.money-envelope .red-seal{width:58px;height:58px;border-radius:50%;margin:0 auto 14px;background:#ffd76a;color:#a71914;display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:900;box-shadow:0 5px 15px rgba(0,0,0,.18)}
+.money-envelope h2{margin:0;font-size:25px;position:relative}
+.money-envelope .envelope-subtitle{margin:8px 0 18px;opacity:.9;position:relative}
+.money-number{font-size:48px;font-weight:900;letter-spacing:1px;line-height:1.1;min-height:58px;position:relative;text-shadow:0 3px 10px rgba(0,0,0,.2)}
+.money-number.spinning{animation:numberPulse .09s infinite alternate}
+.money-popup-btn{margin-top:22px;border:0;border-radius:999px;padding:13px 28px;background:#fff;color:#b71916;font-weight:800;cursor:pointer;position:relative;box-shadow:0 6px 16px rgba(0,0,0,.18)}
+.money-popup-btn:disabled{opacity:.55;cursor:default}
+.money-result{font-size:15px;margin-top:8px;min-height:20px;position:relative}
+@keyframes envelopeIn{from{opacity:0;transform:scale(.88) translateY(18px)}to{opacity:1;transform:scale(1) translateY(0)}}
+@keyframes numberPulse{from{transform:scale(1)}to{transform:scale(1.035)}}
+@media(max-width:480px){.app{padding:16px 12px 36px}.logo h1{font-size:28px}.panel{padding:18px}.cards{gap:10px}}
+</style>
+</head>
+<body>
+<div class="app">
+
+<section id="loginScreen" class="screen active">
+  <div class="logo">
+    <h1 id="siteTitle">尋找你的隊輔</h1>
+    <p id="siteSubtitle">Find Your Leaders</p>
+  </div>
+  <div class="panel">
+    <label for="nameInput" id="nameLabel">請輸入你的名字</label>
+    <input id="nameInput" placeholder="例如：小明" autocomplete="off">
+    <button class="btn" id="startButton" onclick="login()">開始遊戲</button>
+    <div id="loginError" class="error"></div>
+    <p class="small" id="loginHint">請輸入活動名單中的姓名，系統會自動分配你的兩張神秘卡。</p>
+  </div>
+</section>
+
+<section id="gameScreen" class="screen">
+  <div class="topbar">
+    <div><strong id="playerName"></strong><div class="small" id="teamName"></div></div>
+    <button class="money" type="button" onclick="openCashflow()">💰 <span id="money">30,000</span><small>點擊查看金流</small></button>
+  </div>
+
+  <div class="panel">
+    <h2 id="challengeTitle">🎮 玩遊戲</h2>
+    <p class="small" id="challengeDescription">先輸入本次挑戰的活動幣，再按「玩遊戲」。金額不能超過你目前的餘額。</p>
+
+    <div class="challenge-box">
+      <label for="feeInput" id="feeLabel">本次挑戰消耗</label>
+      <div class="money-input">
+        <span>$</span>
+        <input id="feeInput" type="number" min="1" step="1" inputmode="numeric">
+      </div>
+      <button class="btn" id="playButton" onclick="startChallenge()">玩遊戲</button>
+      <div id="challengeMessage" class="error"></div>
+      <div id="challengeStatus" class="status"></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2 id="codeTitle">🏆 完成代碼</h2>
+    <p class="small" id="codeDescription">只有先按「玩遊戲」並支付活動幣後，才能兌換完成代碼。挑戰成功可獲得 2 倍挑戰金！</p>
+    <div class="code-row">
+      <input id="codeInput" autocomplete="off">
+      <button class="btn" id="redeemButton" onclick="redeemCode()">領取獎勵</button>
+    </div>
+    <div id="codeMessage" class="error"></div>
+    <div id="history" class="history"></div>
+  </div>
+
+  <div class="panel">
+    <h2 id="cardsTitle">你的神秘卡</h2>
+    <p class="small" id="cardsDescription">你被分配了兩位隊輔，但系統不會直接告訴你是誰。透過活動幣翻開照片線索找出他們。</p>
+    <div class="cards">
+      <div>
+        <div class="mystery-card" onclick="selectCard(0)"><div class="card-cover">?</div></div>
+        <div class="card-title" id="cardATitle">神秘卡 A</div>
+      </div>
+      <div>
+        <div class="mystery-card" onclick="selectCard(1)"><div class="card-cover">?</div></div>
+        <div class="card-title" id="cardBTitle">神秘卡 B</div>
+      </div>
+    </div>
+  </div>
+
+  <div id="gridPanel" class="panel" style="display:none">
+    <h2 class="grid-title" id="gridTitle"></h2>
+    <p class="small" id="gridDescription"></p>
+    <div id="grid" class="grid"></div>
+    <div id="gridMessage" class="error"></div>
+    <button class="btn secondary" id="backButton" onclick="closeGrid()">回到我的頁面</button>
+  </div>
+
+</section>
+</div>
+
+<!-- 💰 金流明細彈窗 -->
+<div id="cashflowPopup" class="cashflow-popup" aria-hidden="true">
+  <div class="cashflow-panel">
+    <div class="cashflow-head">
+      <h2>💰 金流明細</h2>
+      <button class="cashflow-close" type="button" onclick="closeCashflow()">×</button>
+    </div>
+    <div id="cashflowTotal" class="cashflow-total"></div>
+    <div id="cashflowList" class="cashflow-list"></div>
+  </div>
+</div>
+
+<!-- 💌 初始活動幣紅包彈窗 -->
+<div id="moneyPopup" class="money-popup" aria-hidden="true">
+  <div class="money-envelope">
+    <div class="red-seal">$</div>
+    <h2 id="moneyPopupTitle">恭喜你！</h2>
+    <div class="envelope-subtitle">你收到本次活動的初始活動幣</div>
+    <div id="moneyRollingNumber" class="money-number">$0</div>
+    <div id="moneyPopupResult" class="money-result">正在拆開紅包……</div>
+    <button id="moneyPopupButton" class="money-popup-btn" disabled onclick="closeMoneyPopup()">請稍候</button>
+  </div>
+</div>
+
+<script>
+/* =========================================================
+   基本設定區
+   ========================================================= */
+const GAME_CONFIG = {
+  title: "尋找你的隊輔",
+  subtitle: "Find Your Leaders",
+  
+  // 💰 每位玩家第一次登入時擁有多少活動幣
+  startingMoney: 30000,
+
+  // 🔍 翻開一格照片線索需要多少活動幣
+  clueCost: 30000,
+
+  text: {
+    nameLabel: "請輸入你的名字",
+    namePlaceholder: "例如：小明",
+    startButton: "開始遊戲",
+    loginHint: "請輸入活動名單中的姓名，系統會自動分配你的兩張神秘卡。",
+
+    challengeTitle: "🎮 玩遊戲",
+    challengeDescription: "先輸入本次挑戰的活動幣，再按「玩遊戲」。金額不能超過你目前的餘額。",
+    feeLabel: "本次挑戰消耗",
+    playButton: "玩遊戲",
+    challengeNotStarted: "目前尚未開始挑戰。請先輸入金額並按「玩遊戲」。",
+    challengeStarted: "挑戰進行中！完成遊戲後，請輸入關主提供的完成代碼。",
+    feeTooHigh: "輸入金額不能超過目前餘額。",
+    feeInvalid: "請輸入大於 0 的整數。",
+    challengeSuccess: "挑戰已開始，活動幣已扣除。",
+    alreadyPlaying: "你目前已有一場進行中的挑戰，請先完成這場遊戲。",
+
+    codeTitle: "🏆 完成代碼",
+    codeDescription: "只有先按「玩遊戲」並支付活動幣後，才能兌換完成代碼。挑戰成功可獲得 2 倍挑戰金！",
+    codePlaceholder: "輸入完成代碼",
+    redeemButton: "領取獎勵",
+
+    cardsTitle: "你的神秘卡",
+    cardsDescription: "你被分配了兩位隊輔，但系統不會直接告訴你是誰。透過活動幣翻開照片線索找出他們。",
+    cardA: "神秘卡 A",
+    cardB: "神秘卡 B",
+
+    gridDescription: "每翻開一格需要活動幣。已翻開的格子不會再次蓋回去。",
+    backButton: "回到我的頁面",
+
+    wrongName: "找不到這個名字，請確認輸入是否與活動名單一致。",
+    invalidCode: "這不是有效的完成代碼。",
+    usedCode: "這個代碼你已經使用過了。",
+    noMoney: "活動幣不足，無法翻開這一格。",
+    codeSuccess: "完成成功！",
+    teamName: "第 {team} 隊",
+    noHistory: "尚未兌換任何完成代碼",
+    history: "已兌換代碼："
+  }
+};
+
+/* ---------------------------------------------------------
+   玩家名單
+   --------------------------------------------------------- */
+const players = {
+  "小明": {team:1, leaders:["leader01","leader02"]},
+  "小華": {team:1, leaders:["leader01","leader02"]},
+  "小美": {team:1, leaders:["leader01","leader02"]},
+
+  "小安": {team:2, leaders:["leader03","leader04"]},
+  "小杰": {team:2, leaders:["leader03","leader04"]},
+  "小晴": {team:2, leaders:["leader03","leader04"]},
+
+  "小恩": {team:3, leaders:["leader05","leader06"]},
+  "小宇": {team:3, leaders:["leader05","leader06"]},
+  "小妤": {team:3, leaders:["leader05","leader06"]},
+
+  "小凱": {team:4, leaders:["leader07","leader08"]},
+  "小涵": {team:4, leaders:["leader07","leader08"]},
+  "小廷": {team:4, leaders:["leader07","leader08"]},
+
+  "小葳": {team:5, leaders:["leader09","leader10"]},
+  "小哲": {team:5, leaders:["leader09","leader10"]},
+  "小芸": {team:5, leaders:["leader09","leader10"]},
+
+  "小翔": {team:6, leaders:["leader11","leader12"]}
+};
+
+/* ---------------------------------------------------------
+   隊輔資料
+   --------------------------------------------------------- */
+const leaders = {};
+for(let i=1; i<=16; i++){
+  const id = "leader" + String(i).padStart(2,"0");
+  leaders[id] = {
+    name: "隊輔 " + String.fromCharCode(64+i),
+    photos: Array.from(
+      {length:12},
+      (_,j) => `https://picsum.photos/seed/${id}-${j+1}/500/500`
+    )
+  };
+}
+
+/* ---------------------------------------------------------
+   遊戲代碼
+   --------------------------------------------------------- */
+const gameCodes = {
+  "LOSE": {game:"遊戲失敗", lose:true},
+  "A1WIN": {game:"遊戲 01"},
+  "B2WIN": {game:"遊戲 02"},
+  "C3WIN": {game:"遊戲 03"},
+  "D4WIN": {game:"遊戲 04"},
+  "E5WIN": {game:"遊戲 05"},
+  "F6WIN": {game:"遊戲 06"},
+  "G7WIN": {game:"遊戲 07"},
+  "H8WIN": {game:"遊戲 08"},
+  "J9WIN": {game:"遊戲 09"},
+  "K0WIN": {game:"遊戲 10"}
+};
+
+/* =========================================================
+   核心邏輯
+   ========================================================= */
+let currentPlayer = null;
+let currentCard = null;
+let state = {};
+
+function applyTexts(){
+  const t = GAME_CONFIG.text;
+  document.title = GAME_CONFIG.title;
+
+  document.getElementById("siteTitle").textContent = GAME_CONFIG.title;
+  document.getElementById("siteSubtitle").textContent = GAME_CONFIG.subtitle;
+  document.getElementById("nameLabel").textContent = t.nameLabel;
+  document.getElementById("nameInput").placeholder = t.namePlaceholder;
+  document.getElementById("startButton").textContent = t.startButton;
+  document.getElementById("loginHint").textContent = t.loginHint;
+
+  document.getElementById("challengeTitle").textContent = t.challengeTitle;
+  document.getElementById("challengeDescription").textContent = t.challengeDescription;
+  document.getElementById("feeLabel").textContent = t.feeLabel;
+  document.getElementById("playButton").textContent = t.playButton;
+
+  document.getElementById("codeTitle").textContent = t.codeTitle;
+  document.getElementById("codeDescription").textContent = t.codeDescription;
+  document.getElementById("codeInput").placeholder = t.codePlaceholder;
+  document.getElementById("redeemButton").textContent = t.redeemButton;
+
+  document.getElementById("cardsTitle").textContent = t.cardsTitle;
+  document.getElementById("cardsDescription").textContent = t.cardsDescription;
+  document.getElementById("cardATitle").textContent = t.cardA;
+  document.getElementById("cardBTitle").textContent = t.cardB;
+  document.getElementById("gridDescription").textContent = t.gridDescription;
+  document.getElementById("backButton").textContent = t.backButton;
+}
+
+function loadState(){
+  state = JSON.parse(localStorage.getItem("leaderGameStateMoney") || "{}");
+}
+
+function saveState(){
+  localStorage.setItem("leaderGameStateMoney", JSON.stringify(state));
+}
+
+function login(){
+  const name = document.getElementById("nameInput").value.trim();
+  const error = document.getElementById("loginError");
+  error.textContent = "";
+
+  if(!players[name]){
+    error.textContent = GAME_CONFIG.text.wrongName;
+    return;
+  }
+
+  currentPlayer = name;
+  let isNewPlayer = false;
+
+  if(!state[name]){
+    isNewPlayer = true;
+    state[name] = {
+      money: GAME_CONFIG.startingMoney,
+      usedCodes: [],
+      opened:[[],[]],
+      challenge: null,
+      transactions: [{type:"plus", amount: GAME_CONFIG.startingMoney, description:"初始活動幣", time: Date.now()}]
+    };
+    saveState();
+  }
+
+  if(typeof state[name].money !== "number"){
+    state[name].money = GAME_CONFIG.startingMoney;
+  }
+  if(!Array.isArray(state[name].usedCodes)) state[name].usedCodes = [];
+  if(!Array.isArray(state[name].opened)) state[name].opened = [[],[]];
+  if(!state[name].challenge) state[name].challenge = null;
+  if(!Array.isArray(state[name].transactions)) state[name].transactions = [];
+  if(state[name].transactions.length === 0){
+    state[name].transactions.push({type:"plus", amount: GAME_CONFIG.startingMoney, description:"初始活動幣", time: Date.now()});
+  }
+
+  saveState();
+
+  if(isNewPlayer){
+    showMoneyPopup();
+  } else {
+    showGame();
+  }
+}
+
+function showMoneyPopup(){
+  const popup = document.getElementById("moneyPopup");
+  const numberEl = document.getElementById("moneyRollingNumber");
+  const resultEl = document.getElementById("moneyPopupResult");
+  const button = document.getElementById("moneyPopupButton");
+  const finalMoney = Number(GAME_CONFIG.startingMoney) || 0;
+
+  popup.classList.add("show");
+  popup.setAttribute("aria-hidden", "false");
+  numberEl.classList.add("spinning");
+  button.disabled = true;
+  button.textContent = "請稍候";
+  resultEl.textContent = "正在拆開紅包……";
+
+  const duration = 1800;
+  const start = performance.now();
+  const timer = setInterval(()=>{
+    const now = performance.now();
+    const progress = Math.min((now - start) / duration, 1);
+    if(progress < 1){
+      const random = Math.floor(Math.random() * 99999) + 1;
+      numberEl.textContent = "$" + random.toLocaleString();
+    }else{
+      clearInterval(timer);
+      numberEl.textContent = "$" + finalMoney.toLocaleString();
+      numberEl.classList.remove("spinning");
+      resultEl.textContent = "這是你本次活動的初始活動幣！";
+      button.disabled = false;
+      button.textContent = "收下 $" + finalMoney.toLocaleString();
+    }
+  }, 70);
+}
+
+function closeMoneyPopup(){
+  const popup = document.getElementById("moneyPopup");
+  popup.classList.remove("show");
+  popup.setAttribute("aria-hidden", "true");
+  showGame();
+}
+
+function addTransaction(type, amount, description){
+  const s = state[currentPlayer];
+  if(!Array.isArray(s.transactions)) s.transactions = [];
+  s.transactions.push({type, amount, description, time: Date.now()});
+}
+
+function openCashflow(){
+  const popup = document.getElementById("cashflowPopup");
+  const list = document.getElementById("cashflowList");
+  const total = document.getElementById("cashflowTotal");
+  const s = state[currentPlayer];
+  if(!s) return;
+  const txs = Array.isArray(s.transactions) ? s.transactions : [];
+  total.textContent = `目前餘額：$${s.money.toLocaleString()}`;
+  list.innerHTML = txs.length ? txs.slice().reverse().map(tx=>{
+    const sign = tx.type === "plus" ? "+" : "-";
+    const cls = tx.type === "plus" ? "cashflow-plus" : "cashflow-minus";
+    const time = new Date(tx.time).toLocaleString("zh-TW", {month:"numeric", day:"numeric", hour:"2-digit", minute:"2-digit"});
+    return `<div class="cashflow-item"><div><div class="desc">${tx.description}</div><div class="time">${time}</div></div><div class="${cls}">${sign}$${Number(tx.amount).toLocaleString()}</div></div>`;
+  }).join("") : '<div class="cashflow-empty">尚無金流紀錄</div>';
+  popup.classList.add("show");
+  popup.setAttribute("aria-hidden","false");
+}
+
+function closeCashflow(){
+  const popup = document.getElementById("cashflowPopup");
+  popup.classList.remove("show");
+  popup.setAttribute("aria-hidden","true");
+}
+
+function showGame(){
+  document.getElementById("loginScreen").classList.remove("active");
+  document.getElementById("gameScreen").classList.add("active");
+
+  document.getElementById("playerName").textContent = currentPlayer;
+  document.getElementById("teamName").textContent =
+    GAME_CONFIG.text.teamName.replace("{team}", players[currentPlayer].team);
+
+  updateUI();
+}
+
+function updateUI(){
+  const s = state[currentPlayer];
+  if (!s) return;
+
+  document.getElementById("money").textContent = s.money.toLocaleString();
+
+  const status = document.getElementById("challengeStatus");
+  const playButton = document.getElementById("playButton");
+  const feeInput = document.getElementById("feeInput");
+
+  if(s.challenge){
+    status.textContent =
+      `${GAME_CONFIG.text.challengeStarted} 本次消耗：$${s.challenge.fee.toLocaleString()}｜${s.challenge.game}`;
+    playButton.disabled = true;
+    feeInput.disabled = true;
+  }else{
+    status.textContent = GAME_CONFIG.text.challengeNotStarted;
+    playButton.disabled = false;
+    feeInput.disabled = false;
+  }
+
+  const history = document.getElementById("history");
+  history.innerHTML = s.usedCodes.length
+    ? GAME_CONFIG.text.history +
+      s.usedCodes.map(x=>`<span class="badge">${x}</span>`).join("")
+    : GAME_CONFIG.text.noHistory;
+}
+
+function startChallenge(){
+  const input = document.getElementById("feeInput");
+  const msg = document.getElementById("challengeMessage");
+  const fee = Number(input.value);
+  const s = state[currentPlayer];
+
+  msg.className = "error";
+  msg.textContent = "";
+
+  if(s.challenge){
+    msg.textContent = GAME_CONFIG.text.alreadyPlaying;
+    return;
+  }
+
+  if(!Number.isInteger(fee) || fee <= 0){
+    msg.textContent = GAME_CONFIG.text.feeInvalid;
+    return;
+  }
+
+  if(fee > s.money){
+    msg.textContent = GAME_CONFIG.text.feeTooHigh;
+    return;
+  }
+
+  s.money -= fee;
+  addTransaction("minus", fee, "玩遊戲");
+  s.challenge = {
+    fee: fee,
+    game: "本次遊戲",
+    startedAt: Date.now()
+  };
+
+  saveState();
+  msg.className = "success";
+  msg.textContent = GAME_CONFIG.text.challengeSuccess;
+  updateUI();
+}
+
+function redeemCode(){
+  const input = document.getElementById("codeInput");
+  const msg = document.getElementById("codeMessage");
+  const code = input.value.trim().toUpperCase();
+  const s = state[currentPlayer];
+
+  msg.textContent = "";
+  msg.style.color = "#b3261e";
+
+  if(!s.challenge){
+    msg.textContent = "請先按「玩遊戲」開始一場挑戰，再輸入完成代碼。";
+    return;
+  }
+
+  if(!gameCodes[code]){
+    msg.textContent = GAME_CONFIG.text.invalidCode;
+    return;
+  }
+
+  // lose 可重複使用：不給獎勵，但本次挑戰會結束，玩家可以開始下一場。
+  if(code === "LOSE"){
+    msg.style.color = "#b3261e";
+    msg.textContent = "遊戲失敗，本次沒有獲得獎勵；本次挑戰已結束，可以開始下一場遊戲。";
+    s.challenge = null;
+    input.value = "";
+    document.getElementById("feeInput").value = "";
+    document.getElementById("challengeMessage").textContent = "";
+    saveState();
+    updateUI();
+    return;
+  }
+
+  if(s.usedCodes.includes(code)){
+    msg.textContent = GAME_CONFIG.text.usedCode;
+    return;
+  }
+
+  const result = gameCodes[code];
+  
+  // 💰 獎勵金為挑戰消耗金額的 2 倍
+  const reward = s.challenge.fee * 2;
+
+  s.money += reward;
+  addTransaction("plus", reward, "贏遊戲");
+  s.usedCodes.push(code);
+  s.challenge = null;
+
+  saveState();
+
+  msg.style.color = "#2e7d32";
+  msg.textContent =
+    `${GAME_CONFIG.text.codeSuccess}${result.game}：獲得 2 倍獎勵 +${reward.toLocaleString()} 活動幣 💰`;
+
+  input.value = "";
+  document.getElementById("feeInput").value = "";
+  document.getElementById("challengeMessage").textContent = "";
+  updateUI();
+}
+
+function selectCard(index){
+  currentCard = index;
+  const leaderId = players[currentPlayer].leaders[index];
+  const leader = leaders[leaderId];
+
+  document.getElementById("gridPanel").style.display = "block";
+  document.getElementById("gridTitle").textContent =
+    index === 0 ? GAME_CONFIG.text.cardA : GAME_CONFIG.text.cardB;
+  document.getElementById("gridMessage").textContent = "";
+
+  renderGrid(leader,index);
+  document.getElementById("gridPanel").scrollIntoView({behavior:"smooth"});
+}
+
+function renderGrid(leader,index){
+  const grid = document.getElementById("grid");
+  const opened = state[currentPlayer].opened[index];
+  grid.innerHTML = "";
+
+  leader.photos.forEach((photo,i)=>{
+    const tile = document.createElement("button");
+    tile.className = "tile " + (opened.includes(i) ? "opened" : "locked");
+
+    if(opened.includes(i)){
+      tile.innerHTML = `<img src="${photo}" alt="線索 ${i+1}">`;
+    }else{
+      tile.textContent = "🔒";
+      tile.onclick = ()=>openTile(index,i,leader);
+    }
+
+    grid.appendChild(tile);
+  });
+}
+
+function openTile(index,i,leader){
+  const s = state[currentPlayer];
+  const gridMessage = document.getElementById("gridMessage");
+  if(gridMessage) gridMessage.textContent = "";
+
+  if(s.opened[index].includes(i)) return;
+
+  if(s.money < GAME_CONFIG.clueCost){
+    if(gridMessage){
+      gridMessage.style.color = "#b3261e";
+      gridMessage.textContent = "餘額不足，無法翻開這一格。";
+    }
+    return;
+  }
+
+  s.money -= GAME_CONFIG.clueCost;
+  addTransaction("minus", GAME_CONFIG.clueCost, "翻格子");
+  s.opened[index].push(i);
+  saveState();
+  updateUI();
+  renderGrid(leader,index);
+}
+
+function closeGrid(){
+  document.getElementById("gridPanel").style.display = "none";
+  currentCard = null;
+}
+
+applyTexts();
+loadState();
+</script>
+</body>
+</html>
